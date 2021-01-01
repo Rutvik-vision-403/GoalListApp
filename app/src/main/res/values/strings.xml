@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">Goal List</string>
+    <string name="add_goal">Add Goal</string>
+    <string name="enter_your_goal">Enter Your Goal</string>
+    <string name="add_your_goal">add your goal</string>
+    <string name="title_of_add_goal_activity">Add Goal</string>
+    <string name="goal_title">Goal Title</string>
+    <string name="set_date">Set Date</string>
+    <string name="text_view_add_goal">Add Goal</string>
+    <string name="image_view_add_icon">add icon</string>
+    <string name="note_hint_for_add_item">Note</string>
+    <string name="save_date">save date</string>
+</resources>

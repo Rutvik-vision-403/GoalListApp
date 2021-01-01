@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item android:id="@+id/setDate"
+        android:icon="@drawable/ic_baseline_date_range_24"
+        android:title="@string/set_date"
+        app:showAsAction="always" />
+
+    <item android:id="@+id/savaGoal"
+        android:icon="@drawable/ic_baseline_save_24"
+        android:title="@string/save_date"
+        app:showAsAction="always" />
+
+</menu>
