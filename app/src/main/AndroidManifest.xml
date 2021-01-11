@@ -2,6 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.goallist">
 
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="com.android.alarm.permission.SET_ALARM" />
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -9,10 +12,17 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.GoalList">
+        <receiver
+            android:name=".MyReceiver"
+            android:enabled="true"
+            android:exported="true"/>
 
-        <activity android:name=".AddGoal" android:label="@string/title_of_add_goal_activity"/>
-
-        <activity android:name=".MainActivity" android:screenOrientation="locked">
+        <activity
+            android:name=".AddGoal"
+            android:label="@string/title_of_add_goal_activity" android:screenOrientation="locked"/>
+        <activity
+            android:name=".MainActivity"
+            android:screenOrientation="locked">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

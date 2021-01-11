@@ -1,16 +1,12 @@
 package com.example.goallist.Database;
 
+import android.annotation.SuppressLint;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
-import android.os.Build;
-import android.widget.Toast;
-
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.annotation.RequiresApi;
+import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,7 +14,7 @@ import java.util.List;
 public class DatabaseHelper extends SQLiteOpenHelper {
 
 
-    private static final String DATABASE_NAME = "Goal_List_1";
+    private static final String DATABASE_NAME = "Goal_List_v2";
     private static final int DATABASE_VERSION = 1;
 
     public DatabaseHelper(Context context) {
@@ -57,25 +53,27 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 masterGoal.setId(cursor.getInt(cursor.getColumnIndex(MasterGoal.COLUMN_ID)));
                 masterGoal.setGoalTitle(cursor.getString(cursor.getColumnIndex(MasterGoal.COLUMN_GOAL)));
                 masterGoal.setEndDate(cursor.getString(cursor.getColumnIndex(MasterGoal.COLUMN_END_DATE)));
+                masterGoal.setRecyclerPosition(cursor.getInt(cursor.getColumnIndex(MasterGoal.RECYCLER_POSITION)));
 
                 masterGoals.add(masterGoal);
 
             } while (cursor.moveToNext());
         }
-        sqLiteDatabase.close();
+
+        cursor.close();
+         //sqLiteDatabase.close();
 
         return masterGoals;
 
     }
 
-    // get all sub goal from goal table
-    public List<SubGoal> getAllSubGoalFromSubGoalTable() {
+    public List<SubGoal> getAllSubGoals() {
 
         List<SubGoal> subGoals = new ArrayList<>();
-        String selectQuery = "SELECT * FROM " + SubGoal.TABLE_NAME;
+        String getAllData = " SELECT * FROM " + SubGoal.TABLE_NAME;
 
         SQLiteDatabase sqLiteDatabase = this.getWritableDatabase();
-        Cursor cursor = sqLiteDatabase.rawQuery(selectQuery, null);
+        Cursor cursor = sqLiteDatabase.rawQuery(getAllData, null);
 
         if (cursor.moveToFirst()) {
             do {
@@ -85,11 +83,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 subGoal.setMasterId(cursor.getInt(cursor.getColumnIndex(SubGoal.MASTER_GOAL_ID)));
 
                 subGoals.add(subGoal);
-
             } while (cursor.moveToNext());
         }
-        sqLiteDatabase.close();
-
+        cursor.close();
         return subGoals;
     }
 
@@ -97,82 +93,67 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
         SQLiteDatabase sqLiteDatabase = this.getReadableDatabase();
 
+        // TODO : problem here adapter position always give in 1 to 4 and database table
+        //  id have dif value when item delete at that time id not match
         Cursor cursor = sqLiteDatabase
                 .query(MasterGoal.TABLE_NAME
                         , new String[]{MasterGoal.COLUMN_ID
                                 , MasterGoal.COLUMN_GOAL
-                                , MasterGoal.COLUMN_END_DATE},
+                                , MasterGoal.COLUMN_END_DATE, MasterGoal.RECYCLER_POSITION},
                         MasterGoal.COLUMN_ID + "=?", new String[]{String.valueOf(id)}, null, null, null);
         if (cursor != null)
             cursor.moveToFirst();
 
         MasterGoal masterGoal = new MasterGoal(cursor.getInt(cursor.getColumnIndex(MasterGoal.COLUMN_ID)),
                 cursor.getString(cursor.getColumnIndex(MasterGoal.COLUMN_GOAL)),
-                cursor.getString(cursor.getColumnIndex(MasterGoal.COLUMN_END_DATE)));
+                cursor.getString(cursor.getColumnIndex(MasterGoal.COLUMN_END_DATE)), cursor.getInt(cursor.getColumnIndex(MasterGoal.RECYCLER_POSITION)));
 
         cursor.close();
+         //sqLiteDatabase.close();
         return masterGoal;
     }
 
-    public SubGoal getSubGoal(long id) {
+    public List<SubGoal> getSubGoalWithMasterId(long id) {
+        List<SubGoal> subGoals = new ArrayList<>();
 
-        SQLiteDatabase sqLiteDatabase = this.getReadableDatabase();
-
+        SQLiteDatabase sqLiteDatabase = this.getWritableDatabase();
         Cursor cursor = sqLiteDatabase
                 .query(SubGoal.TABLE_NAME
                         , new String[]{SubGoal.COLUMN_ID
                                 , SubGoal.COLUMN_GOAL
                                 , SubGoal.MASTER_GOAL_ID},
-                        SubGoal.COLUMN_ID + "=?", new String[]{String.valueOf(id)}, null, null, null);
-        if (cursor != null)
-            cursor.moveToFirst();
+                        SubGoal.MASTER_GOAL_ID + "=?", new String[]{String.valueOf(id)}, null, null, null);
+            if (cursor.moveToFirst()) {
+                do {
+                    SubGoal subGoal = new SubGoal();
+                    subGoal.setId(cursor.getInt(cursor.getColumnIndex(SubGoal.COLUMN_ID)));
+                    subGoal.setSubGoal(cursor.getString(cursor.getColumnIndex(SubGoal.COLUMN_GOAL)));
+                    subGoal.setMasterId(cursor.getInt(cursor.getColumnIndex(SubGoal.MASTER_GOAL_ID)));
 
-        SubGoal subGoal = new SubGoal(cursor.getInt(cursor.getColumnIndex(SubGoal.COLUMN_ID)),
-                cursor.getString(cursor.getColumnIndex(SubGoal.COLUMN_GOAL)),
-                cursor.getInt(cursor.getColumnIndex(SubGoal.MASTER_GOAL_ID)));
+                    subGoals.add(subGoal);
+
+                } while (cursor.moveToNext());
+            }
 
         cursor.close();
-        return subGoal;
+        // sqLiteDatabase.close();
 
-    }
-
-    // return current all clicked master index data
-    public List<SubGoal> getSubGoalDataWithPosition(int id) {
-
-        List<SubGoal> subGoalData = new ArrayList<>();
-
-        //String selectQuery = "SELECT " + SubGoal.COLUMN_GOAL + " FROM " + SubGoal.TABLE_NAME + " WHERE " + SubGoal.MASTER_GOAL_ID + " =? " + id;
-        SQLiteDatabase sqLiteDatabase = this.getWritableDatabase();
-        Cursor cursor = sqLiteDatabase.query(SubGoal.TABLE_NAME,new String[]{SubGoal.COLUMN_GOAL},
-                SubGoal.MASTER_GOAL_ID + " =? ",
-                new String[]{String.valueOf(id)},null,null,null);
-       // Cursor cursor = sqLiteDatabase.rawQuery(selectQuery, null);
-
-        if (cursor.moveToFirst()) {
-            do {
-                SubGoal subGoal = new SubGoal();
-                subGoal.setSubGoal(cursor.getString(cursor.getColumnIndex(SubGoal.COLUMN_GOAL)));
-                subGoalData.add(subGoal);
-            } while (cursor.moveToNext());
-        }
-        cursor.close();
-        return subGoalData;
+        return subGoals;
     }
 
     // insert data into master goal and sub goal
-    public long insertGoal(String masterGoalTitle, String masterGoalDate) {
+    public long insertGoal(String masterGoalTitle, String endDate) {
 
         SQLiteDatabase sqLiteDatabase = this.getWritableDatabase();
         ContentValues contentValues = new ContentValues();
 
         contentValues.put(MasterGoal.COLUMN_GOAL, masterGoalTitle);
-        contentValues.put(MasterGoal.COLUMN_END_DATE, masterGoalDate);
-        long masterGoalInsertIndex = sqLiteDatabase.insert(MasterGoal.TABLE_NAME, null, contentValues);
-        sqLiteDatabase.close();
-        return masterGoalInsertIndex;
+        contentValues.put(MasterGoal.COLUMN_END_DATE, endDate);
+        // sqLiteDatabase.close();
+        return sqLiteDatabase.insert(MasterGoal.TABLE_NAME, null, contentValues);
     }
 
-    public long insertSubGoals(String subGoalData, long masterGoalId) {
+    public void insertSubGoals(String subGoalData, long masterGoalId) {
 
         SQLiteDatabase sqLiteDatabase = this.getWritableDatabase();
         ContentValues contentValues = new ContentValues();
@@ -180,35 +161,78 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         contentValues.put(SubGoal.COLUMN_GOAL, subGoalData);
         contentValues.put(SubGoal.MASTER_GOAL_ID, masterGoalId);
 
-        long subGoalInsertIndex = sqLiteDatabase.insert(SubGoal.TABLE_NAME, null, contentValues);
-        sqLiteDatabase.close();
-        return subGoalInsertIndex;
+         // sqLiteDatabase.close();
+        sqLiteDatabase.insert(SubGoal.TABLE_NAME, null, contentValues);
 
     }
 
     // update goal title
-    public void updateGoalTitle(MasterGoal masterGoalTitle) {
+    public void updateGoalTitle(MasterGoal masterGoalTitle, String updatedValue) {
 
         SQLiteDatabase sqLiteDatabase = this.getWritableDatabase();
 
         ContentValues contentValues = new ContentValues();
-        contentValues.put(MasterGoal.COLUMN_GOAL, masterGoalTitle.getGoalTitle());
+        contentValues.put(MasterGoal.COLUMN_GOAL, updatedValue);
         sqLiteDatabase.update(MasterGoal.TABLE_NAME,
                 contentValues, MasterGoal.COLUMN_ID + "=?"
                 , new String[]{String.valueOf(masterGoalTitle.getId())});
 
+       //  sqLiteDatabase.close();
     }
 
-    // update sub goal data
-    public void updateSubGoals(SubGoal subGoalData) {
+    public void updateRecyclerPosition(long idOfMasterGoal) {
 
         SQLiteDatabase sqLiteDatabase = this.getWritableDatabase();
-
         ContentValues contentValues = new ContentValues();
-        contentValues.put(MasterGoal.COLUMN_GOAL, subGoalData.getSubGoal());
-        sqLiteDatabase.update(MasterGoal.TABLE_NAME,
-                contentValues, SubGoal.COLUMN_ID + "=?"
-                , new String[]{String.valueOf(subGoalData.getId())});
+        contentValues.put(MasterGoal.RECYCLER_POSITION, idOfMasterGoal);
+        sqLiteDatabase.update(MasterGoal.TABLE_NAME, contentValues, MasterGoal.COLUMN_ID + "=?", new String[]{String.valueOf(idOfMasterGoal)});
+
+
+    }
+
+    public void updateRecyclerPositionValue(int recyclerCurrentPosition, int previousPosition) {
+
+        SQLiteDatabase sqLiteDatabase = this.getWritableDatabase();
+        ContentValues contentValues = new ContentValues();
+
+        contentValues.put(MasterGoal.RECYCLER_POSITION, recyclerCurrentPosition);
+        sqLiteDatabase.update(MasterGoal.TABLE_NAME, contentValues, MasterGoal.COLUMN_ID + "=?", new String[]{String.valueOf(previousPosition)});
+
+    }
+
+    public void updateSubGoalMasterId(List<Integer> oldId, List<Integer> newId) {
+
+
+
+        SQLiteDatabase sqLiteDatabase = this.getWritableDatabase();
+        ContentValues contentValues1 = new ContentValues();
+        // contentValues1.put(SubGoal.MASTER_GOAL_ID,newId);
+
+        sqLiteDatabase.update(SubGoal.TABLE_NAME, contentValues1, SubGoal.MASTER_GOAL_ID + "=?", new String[]{String.valueOf(oldId)});
+    }
+
+    public void updateDateInMasterGoal(int id, String selectedDate) {
+
+        SQLiteDatabase sqLiteDatabase = this.getWritableDatabase();
+        ContentValues contentValues = new ContentValues();
+        contentValues.put(MasterGoal.COLUMN_END_DATE, selectedDate);
+
+        sqLiteDatabase.update(MasterGoal.TABLE_NAME, contentValues, MasterGoal.COLUMN_ID + "=?", new String[]{String.valueOf(id)});
+
+       //  sqLiteDatabase.close();
+    }
+
+    public void updateMasterTableWithDragEvent(int recyclerPosition, String goalTitle, String endDate, int prevGoalId) {
+
+        SQLiteDatabase sqLiteDatabase = this.getWritableDatabase();
+        ContentValues contentValues = new ContentValues();
+
+        contentValues.put(MasterGoal.COLUMN_GOAL, goalTitle);
+        contentValues.put(MasterGoal.COLUMN_END_DATE, endDate);
+        contentValues.put(MasterGoal.RECYCLER_POSITION, recyclerPosition);
+
+        sqLiteDatabase.update(MasterGoal.TABLE_NAME, contentValues, MasterGoal.COLUMN_ID + "=?", new String[]{String.valueOf(prevGoalId)});
+       // sqLiteDatabase.close();
 
     }
 
@@ -216,17 +240,43 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public void deleteGoalAndSubGoal(MasterGoal masterGoal) {
         SQLiteDatabase sqLiteDatabase = this.getWritableDatabase();
         sqLiteDatabase.delete(MasterGoal.TABLE_NAME, MasterGoal.COLUMN_ID + "=?", new String[]{String.valueOf(masterGoal.getId())});
-        // delete list element as well *** but delete element is for change view of recycler only
-        //sqLiteDatabase.delete(SubGoal.TABLE_NAME,SubGoal.MASTER_GOAL_ID+"= ?",new String[]{String.valueOf(masterGoal.getId())});
-        sqLiteDatabase.close();
+        sqLiteDatabase.delete(SubGoal.TABLE_NAME, SubGoal.MASTER_GOAL_ID + "=?", new String[]{String.valueOf(masterGoal.getRecyclerPosition())});
+        //   sqLiteDatabase.close();
 
     }
 
-    // delete only sub goal
-    public void deleteSubGoal(SubGoal subGoal) {
+    public void deleteAllSubGoals(int masterId) {
         SQLiteDatabase sqLiteDatabase = this.getWritableDatabase();
-        sqLiteDatabase.delete(SubGoal.TABLE_NAME, SubGoal.COLUMN_ID + "=?", new String[]{String.valueOf(subGoal.getId())});
-        sqLiteDatabase.close();
+        sqLiteDatabase.delete(SubGoal.TABLE_NAME, SubGoal.MASTER_GOAL_ID + "=?", new String[]{String.valueOf(masterId)});
+       //   sqLiteDatabase.close();
+    }
 
+    public List<SubGoal> returnEmptySubGoals() {
+        return new ArrayList<>();
+    }
+
+    public List<SubGoal> getSubGoalWithRecyclerPosition(int rclcPosition) {
+
+        List<SubGoal> subGoals = new ArrayList<>();
+
+        SQLiteDatabase sqLiteDatabase = this.getWritableDatabase();
+        Cursor cursor = sqLiteDatabase.query(SubGoal.TABLE_NAME,
+                new String[]{SubGoal.COLUMN_ID, SubGoal.COLUMN_GOAL,
+                        SubGoal.MASTER_GOAL_ID}, SubGoal.MASTER_GOAL_ID + "=?", new String[]{String.valueOf(rclcPosition)}, null, null, null);
+
+            if (cursor.moveToFirst()){
+                do {
+                    SubGoal subGoal = new SubGoal();
+                    subGoal.setId(cursor.getInt(cursor.getColumnIndex(SubGoal.COLUMN_ID)));
+                    subGoal.setSubGoal(cursor.getString(cursor.getColumnIndex(SubGoal.COLUMN_GOAL)));
+                    subGoal.setMasterId(cursor.getInt(cursor.getColumnIndex(SubGoal.MASTER_GOAL_ID)));
+
+                    subGoals.add(subGoal);
+                } while (cursor.moveToNext());
+            }
+
+            cursor.close();
+
+        return subGoals;
     }
 }

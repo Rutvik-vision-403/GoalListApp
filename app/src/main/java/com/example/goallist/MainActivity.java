@@ -1,44 +1,36 @@
 package com.example.goallist;
 
+import android.app.AlarmManager;
+import android.app.PendingIntent;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
-import android.widget.TextView;
+import android.widget.LinearLayout;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.goallist.AddGoalList.AddGoalSubTaskWhenExpand;
-import com.example.goallist.AddGoalList.ShowGoalListInMainActivity;
+import com.example.goallist.AddGoalList.ShowGoalListInMainActivityAdapter;
 import com.example.goallist.Database.DatabaseHelper;
 import com.example.goallist.Database.MasterGoal;
-import com.example.goallist.Database.SubGoal;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
-    /*
-    *   Left : delete child note when parent delete
-    *        : add date in database & change date color with time
-    *        : update data and check is data change or not
-    *        : Solve index problem
-    * */
-
-    List<MasterGoal> masterGoals = new ArrayList<>();
-    List<SubGoal> subGoals = new ArrayList<>();
+    // TODO : problem delete notes
+    public final List<MasterGoal> masterGoals = new ArrayList<>();
     DatabaseHelper userDatabase;
-
-
     RecyclerView recyclerViewForListOfGoalTitle;
-    //RecyclerView recyclerViewForSubGoals;
-    ShowGoalListInMainActivity masterGoalAdapter;
-    AddGoalSubTaskWhenExpand subGoalAdapter;
+    ShowGoalListInMainActivityAdapter masterGoalAdapter;
 
 
     @Override
@@ -46,31 +38,18 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        getAllViewReference();
-
-        userDatabase = new DatabaseHelper(this);
-
-        masterGoals.addAll(userDatabase.getAllGoalAndDateFromMasterTable());
-        subGoals.addAll(userDatabase.getAllSubGoalFromSubGoalTable());
-
-
-        recyclerViewForListOfGoalTitle.setLayoutManager(new LinearLayoutManager(this));
-        //recyclerViewForSubGoals.setLayoutManager(new LinearLayoutManager(this));
-
-        masterGoalAdapter = new ShowGoalListInMainActivity(masterGoals,subGoals,this);
-        subGoalAdapter = new AddGoalSubTaskWhenExpand(subGoals,this);
-
-        recyclerViewForListOfGoalTitle.setAdapter(masterGoalAdapter);
-       // recyclerViewForSubGoals.setAdapter(subGoalAdapter);
-
-    }
-
-    private void getAllViewReference(){
-
         recyclerViewForListOfGoalTitle = findViewById(R.id.recyclerView);
 
-        View layout = getLayoutInflater().inflate(R.layout.main_goal_item,null);
-        //recyclerViewForSubGoals = layout.findViewById(R.id.addSubTaskHere);
+        userDatabase = new DatabaseHelper(this);
+        masterGoals.addAll(userDatabase.getAllGoalAndDateFromMasterTable());
+
+        recyclerViewForListOfGoalTitle.setLayoutManager(new LinearLayoutManager(this));
+        masterGoalAdapter = new ShowGoalListInMainActivityAdapter(recyclerViewForListOfGoalTitle,masterGoals,this);
+        recyclerViewForListOfGoalTitle.setAdapter(masterGoalAdapter);
+
+        ItemTouchHelper.Callback dragDropListener= new ItemMoveCallBack(this,masterGoalAdapter);
+        ItemTouchHelper itemTouchHelper = new ItemTouchHelper(dragDropListener);
+        itemTouchHelper.attachToRecyclerView(recyclerViewForListOfGoalTitle);
 
     }
 
@@ -87,9 +66,23 @@ public class MainActivity extends AppCompatActivity {
         if (item.getItemId() == R.id.addNewItemInGoalList){
             Intent gotoAddGoalActivity = new Intent(MainActivity.this,AddGoal.class);
             startActivity(gotoAddGoalActivity);
-
         }
         return super.onOptionsItemSelected(item);
     }
+
+    public void showNotificationDailyMorning(){
+
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTimeInMillis(System.currentTimeMillis());
+        calendar.set(Calendar.HOUR_OF_DAY, 9);
+
+        Intent intent = new Intent(getApplicationContext(),MyReceiver.class);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(getApplicationContext(),0,intent,PendingIntent.FLAG_UPDATE_CURRENT);
+
+        AlarmManager alarmManager = (AlarmManager)getSystemService(Context.ALARM_SERVICE);
+        alarmManager.setRepeating(AlarmManager.RTC_WAKEUP,calendar.getTimeInMillis(),AlarmManager.INTERVAL_DAY,pendingIntent);
+        alarmManager.cancel(pendingIntent);
+    }
+
 
 }

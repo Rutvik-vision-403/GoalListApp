@@ -4,10 +4,23 @@
     <string name="enter_your_goal">Enter Your Goal</string>
     <string name="add_your_goal">add your goal</string>
     <string name="title_of_add_goal_activity">Add Goal</string>
-    <string name="goal_title">Goal Title</string>
+    <string name="goal_title">goal title</string>
     <string name="set_date">Set Date</string>
     <string name="text_view_add_goal">Add Goal</string>
     <string name="image_view_add_icon">add icon</string>
     <string name="note_hint_for_add_item">Note</string>
     <string name="save_date">save date</string>
+    <string name="calender_image">Calender Image</string>
+    <string name="select_date">Select Date</string>
+    <string name="enter_sub_goals">Enter Sub Goals</string>
+    <string name="bullet_image">Bullet Image</string>
+    <string name="delete_note">Delete Note</string>
+    <string name="goal_title_main_List">Goal Title</string>
+    <string name="date_text_view_field">18-Dec-2020</string>
+    <string name="delete_goal">Delete Goal</string>
+    <string name="edit_goal">Edit Goal</string>
+    <string name="expand_goal">expand_goal</string>
+    <string name="collapse_icon">collapse_icon</string>
+    <string name="bullet_for_expand_list">bullet_for_expand_list</string>
+    <string name="data">Data</string>
 </resources>

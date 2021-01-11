@@ -2,43 +2,54 @@ package com.example.goallist;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
-import android.widget.Toast;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.cardview.widget.CardView;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.goallist.AddGoalList.AdapterForFetchData;
-import com.example.goallist.AddGoalList.AddGoalList;
-import com.example.goallist.AddGoalList.ShowGoalListInMainActivity;
+import com.example.goallist.AddGoalList.AddGoalListAdapter;
 import com.example.goallist.Database.DatabaseHelper;
-import com.example.goallist.Database.MasterGoal;
 import com.example.goallist.Database.SubGoal;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.example.goallist.AddGoalList.ShowGoalListInMainActivity.isFromEditButton;
+import static com.example.goallist.AddGoalList.ShowGoalListInMainActivityAdapter.isFromEditButton;
+import static com.example.goallist.AddGoalList.ShowGoalListInMainActivityAdapter.isIsFromEditButtonForSave;
+
 
 public class AddGoal extends AppCompatActivity {
 
-    RecyclerView addGoalList;
-    ArrayList<Integer> addNewItemInArray = new ArrayList<>();
-    AddGoalList addGoalItem;
-    AdapterForFetchData adapterForFetchData;
-    EditText goalTitle;
+    private RecyclerView addGoalList;
 
+    private AddGoalListAdapter addGoalItem;
+    private AdapterForFetchData adapterForFetchData;
+    private EditText goalTitle;
+    private TextView dateView;
+    private CardView datePick;
+    private CardView addNewSubGoal;
+    private LinearLayout addGoalLayout;
 
-    List<MasterGoal> masterGoals = new ArrayList<>();
-    List<SubGoal> subGoals = new ArrayList<>();
+    final DatabaseHelper databaseHelper = new DatabaseHelper(this);
+
     List<SubGoal> selectedSubGoals = new ArrayList<>();
-    DatabaseHelper databaseHelper;
-    int indexData;
+    List<SubGoal> addNewItemInArray = new ArrayList<>();
+
+    public static int idOfMasterGoal;
+    public static int idOfMasterGoalIndex;
+    public static boolean forUpdate = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,25 +57,63 @@ public class AddGoal extends AppCompatActivity {
         setContentView(R.layout.activity_add_goal);
 
         Intent getIndex = getIntent();
-        indexData = getIndex.getIntExtra(ShowGoalListInMainActivity.CURRENT_SELECTED_GOAL_INDEX_TAG, 0);
+        idOfMasterGoal = getIndex.getIntExtra("Current master id", 0);
+        idOfMasterGoalIndex = getIndex.getIntExtra("Current Master Index ID",0);
 
-        Intent getSubGoalData = getIntent();
-        selectedSubGoals = (List<SubGoal>)getSubGoalData.getSerializableExtra(ShowGoalListInMainActivity.LIST_OF_ALL_SUB_GOALS_WITH_PERTICULAR_INDEX);
+
+        selectedSubGoals = databaseHelper.getSubGoalWithMasterId(idOfMasterGoal);
+        addNewItemInArray = databaseHelper.returnEmptySubGoals();
 
         goalTitle = findViewById(R.id.goalTitle);
         addGoalList = findViewById(R.id.addGoalList);
+        addNewSubGoal = findViewById(R.id.addNewGoal);
+        datePick = findViewById(R.id.setDate);
+        dateView = findViewById(R.id.showDateTextView);
+        addGoalLayout = findViewById(R.id.linearLayoutAddGoal);
         addGoalList.setLayoutManager(new LinearLayoutManager(this));
 
-        databaseHelper = new DatabaseHelper(this);
-        masterGoals.addAll(databaseHelper.getAllGoalAndDateFromMasterTable());
-        subGoals.addAll(databaseHelper.getAllSubGoalFromSubGoalTable());
 
-        if (isFromEditButton){
-            adapterForFetchData = new AdapterForFetchData(selectedSubGoals, this);
+       addGoalList.getRecycledViewPool().setMaxRecycledViews(1, 0);
+
+        if (isFromEditButton) {
+
+            String tempDate = databaseHelper.getMasterGoal(idOfMasterGoalIndex).getEndDate();
+            getSupportActionBar().setTitle("Update Goal");
+            if (tempDate != null) {
+                dateView.setText(tempDate);
+            } else {
+                dateView.setText("Select Date");
+            }
+
+        } else {
+            getSupportActionBar().setTitle("Add Goal");
+        }
+
+        datePick.setOnClickListener(view -> {
+            SetDateCalenderFragment setDateCalenderFragment = new SetDateCalenderFragment(AddGoal.this, dateView);
+            setDateCalenderFragment.show(getSupportFragmentManager(), "Set Goal Date");
+        });
+
+        if (isFromEditButton) {
+            adapterForFetchData = new AdapterForFetchData(selectedSubGoals, addGoalList, this);
             addGoalList.setAdapter(adapterForFetchData);
-        }else {
-            addGoalItem = new AddGoalList(addNewItemInArray, this);
+            addNewSubGoal.setVisibility(View.VISIBLE);
+            addGoalLayout.setFocusableInTouchMode(true);
+            addGoalLayout.setFocusable(true);
+
+            adapterForFetchData.notifyDataSetChanged();
+            ItemTouchHelper.Callback dragDropListener= new SubGoalMoveCallBack(this,adapterForFetchData);
+            ItemTouchHelper itemTouchHelper = new ItemTouchHelper(dragDropListener);
+            itemTouchHelper.attachToRecyclerView(addGoalList);
+
+        } else {
+            addGoalItem = new AddGoalListAdapter(addNewItemInArray, addGoalList, this);
             addGoalList.setAdapter(addGoalItem);
+            addNewSubGoal.setVisibility(View.VISIBLE);
+
+            ItemTouchHelper.Callback dragDropListener= new SubGoalMoveCallBack(this,addGoalItem);
+            ItemTouchHelper itemTouchHelper = new ItemTouchHelper(dragDropListener);
+            itemTouchHelper.attachToRecyclerView(addGoalList);
         }
 
         setDataOnAllView();
@@ -73,8 +122,8 @@ public class AddGoal extends AppCompatActivity {
 
     public void setDataOnAllView() {
 
-        if (ShowGoalListInMainActivity.isFromEditButton) {
-            goalTitle.setText(masterGoals.get(indexData).getGoalTitle());
+        if (isFromEditButton) {
+            goalTitle.setText(databaseHelper.getMasterGoal(idOfMasterGoalIndex).getGoalTitle());
             isFromEditButton = false;
         }
     }
@@ -87,41 +136,146 @@ public class AddGoal extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        if (R.id.setDate == item.getItemId()) {
-            SetDateCalenderFragment setDateCalenderFragment = new SetDateCalenderFragment();
-            setDateCalenderFragment.show(getSupportFragmentManager(), "Set Goal Date");
-        } else if (R.id.savaGoal == item.getItemId()) {
+        if (R.id.saveGoal == item.getItemId()) {
 
-            long id = databaseHelper.insertGoal(goalTitle.getText().toString(), "1-Jan-2021");
+            if (isIsFromEditButtonForSave) {
 
-            MasterGoal masterGoal = databaseHelper.getMasterGoal(id);
-            masterGoals.add(0, masterGoal);
-            // insert goal title here
+                databaseHelper.updateDateInMasterGoal(AddGoal.idOfMasterGoalIndex, dateView.getText().toString());
 
-            for (int iterate = 0; iterate < addGoalItem.getItemCount(); iterate++) {
+                if (!goalTitle.getText().toString().isEmpty()) {
+                    databaseHelper.updateGoalTitle(databaseHelper.getMasterGoal(idOfMasterGoalIndex), goalTitle.getText().toString());
+                    databaseHelper.deleteAllSubGoals(idOfMasterGoal);
 
-                EditText editText = addGoalList.findViewHolderForAdapterPosition(iterate).itemView.findViewById(R.id.addNewItem);
+                    for (int insert = 0; insert < selectedSubGoals.size(); insert++) {
 
-                long idSubGoalInserted = databaseHelper.insertSubGoals(editText.getText().toString(), id);
+                        EditText editText = addGoalList.findViewHolderForAdapterPosition(insert).itemView.findViewById(R.id.addNewItem);
+                        if (editText.getText().toString().isEmpty())
+                            continue;
+                        databaseHelper.insertSubGoals(editText.getText().toString(), idOfMasterGoal);
 
-                SubGoal subGoal = databaseHelper.getSubGoal(idSubGoalInserted);
-                subGoals.add(0, subGoal);
-                // insert sub goal here
+                    }
+                    isIsFromEditButtonForSave = false;
+                    forUpdate = false;
+                    Intent gotoMainActivity = new Intent(this, MainActivity.class);
+                    gotoMainActivity.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                    startActivity(gotoMainActivity);
+                } else {
+                    AlertDialog alertDialog = new AlertDialog.Builder(this).
+                            setMessage("Please Enter Title").
+                            setPositiveButton("OK", (dialogInterface, i) -> {
+                            }).create();
+
+                    alertDialog.show();
+                }
+            } else {
+
+                // Check Date validation
+                if ((!goalTitle.getText().toString().isEmpty())) {
+
+                    if ((!dateView.getText().toString().equals("Select Date"))) {
+
+                        long id = databaseHelper.insertGoal(goalTitle.getText().toString(), dateView.getText().toString());
+                        databaseHelper.updateRecyclerPosition(id);
+
+                        for (int iterate = 0; iterate < addGoalItem.getItemCount(); iterate++) {
+
+                            EditText editText = addGoalList.findViewHolderForAdapterPosition(iterate).itemView.findViewById(R.id.addNewItem);
+                            if (editText.getText().toString().isEmpty())
+                                continue;
+                            databaseHelper.insertSubGoals(editText.getText().toString(), id);
+                        }
+
+                        Intent gotoMainActivity = new Intent(this, MainActivity.class);
+                        gotoMainActivity.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                        startActivity(gotoMainActivity);
+
+                    } else {
+                        AlertDialog alertDialog = new AlertDialog.Builder(this).
+                                setMessage("Date is Not Selected!").
+                                setPositiveButton("OK", (dialogInterface, i) -> {
+                                }).create();
+
+                        alertDialog.show();
+                    }
+
+
+                } // Check Title validation
+                else if ((!dateView.getText().toString().equals("Select Date"))) {
+
+                    if ((!goalTitle.getText().toString().isEmpty())) {
+
+                        long id = databaseHelper.insertGoal(goalTitle.getText().toString(), dateView.getText().toString());
+                        databaseHelper.updateRecyclerPosition(id);
+
+                        for (int iterate = 0; iterate < addGoalItem.getItemCount(); iterate++) {
+
+                            EditText editText = addGoalList.findViewHolderForAdapterPosition(iterate).itemView.findViewById(R.id.addNewItem);
+                            if (editText.getText().toString().isEmpty())
+                                continue;
+                            databaseHelper.insertSubGoals(editText.getText().toString(), id);
+                        }
+                        Intent gotoMainActivity = new Intent(this, MainActivity.class);
+                        gotoMainActivity.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                        startActivity(gotoMainActivity);
+                    } else {
+                        AlertDialog alertDialog = new AlertDialog.Builder(this).
+                                setMessage("Please Enter Title").
+                                setPositiveButton("OK", (dialogInterface, i) -> {
+                                }).create();
+
+                        alertDialog.show();
+                    }
+                } else {
+                    AlertDialog alertDialog = new AlertDialog.Builder(this).
+                            setMessage("Enter Title And Date First!").
+                            setPositiveButton("OK", (dialogInterface, i) -> {
+                            }).create();
+                    alertDialog.show();
+                }
             }
-
-            Intent gotoMainActivity = new Intent(this, MainActivity.class);
-            gotoMainActivity.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-            startActivity(gotoMainActivity);
-
         }
         return true;
     }
 
     public void addNewGoalInList(View view) {
 
-        addNewItemInArray.add(1);
-        addGoalItem.notifyDataSetChanged();
+        if (forUpdate) {
+            if (selectedSubGoals.size() == 0) {
+                selectedSubGoals.add(new SubGoal());
+                adapterForFetchData.notifyDataSetChanged();
+            } else if (selectedSubGoals.get((selectedSubGoals.size() - 1)).getSubGoal() != null) {
+                selectedSubGoals.add(new SubGoal());
+                adapterForFetchData.notifyDataSetChanged();
+            } else {
+                AlertDialog alertDialog = new AlertDialog.Builder(this).
+                        setMessage("Please Enter Field First").
+                        setPositiveButton("OK", (dialogInterface, i) -> {
+                        }).setCancelable(false).create();
+                alertDialog.show();
+            }
 
+        } else {
+            if (addNewItemInArray.size() == 0) {
+                addNewItemInArray.add(new SubGoal());
+                addGoalItem.notifyDataSetChanged();
+            } else if (addNewItemInArray.get((addNewItemInArray.size() - 1)).getSubGoal() != null) {
+                addNewItemInArray.add(new SubGoal());
+                addGoalItem.notifyDataSetChanged();
+            } else {
+                AlertDialog alertDialog = new AlertDialog.Builder(this).
+                        setMessage("Please Enter Field First").
+                        setPositiveButton("OK", (dialogInterface, i) -> {
+                        }).setCancelable(false).create();
+                alertDialog.show();
+            }
+        }
+    }
 
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+
+        isIsFromEditButtonForSave = false;
+        forUpdate = false;
     }
 }

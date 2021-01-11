@@ -12,15 +12,14 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.goallist.Database.SubGoal;
 import com.example.goallist.R;
 
-import java.util.ArrayList;
 import java.util.List;
 
-public class AddGoalSubTaskWhenExpand extends RecyclerView.Adapter<AddGoalSubTaskWhenExpand.MyAdapter> {
+public class AddGoalSubTaskWhenExpandAdapter extends RecyclerView.Adapter<AddGoalSubTaskWhenExpandAdapter.MyAdapter> {
 
-    List<SubGoal> subGoalsDataOnly;
-    Context mainActivityContext;
+    final List<SubGoal> subGoalsDataOnly;
+    final Context mainActivityContext;
 
-    public AddGoalSubTaskWhenExpand(List<SubGoal> subGoalsDataOnly, Context mainActivityContext){
+    public AddGoalSubTaskWhenExpandAdapter(List<SubGoal> subGoalsDataOnly, Context mainActivityContext){
 
         this.subGoalsDataOnly = subGoalsDataOnly;
         this.mainActivityContext = mainActivityContext;
@@ -45,12 +44,12 @@ public class AddGoalSubTaskWhenExpand extends RecyclerView.Adapter<AddGoalSubTas
         SubGoal subGoal = subGoalsDataOnly.get(position);
 
         holder.getSubGoals().setText(subGoal.getSubGoal());
-
     }
 
     public static class MyAdapter extends RecyclerView.ViewHolder{
 
-        private TextView subGoalsShow;
+        private final TextView subGoalsShow;
+
         public MyAdapter(@NonNull View itemView) {
             super(itemView);
 
