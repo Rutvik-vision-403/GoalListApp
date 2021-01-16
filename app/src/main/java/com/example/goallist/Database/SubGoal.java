@@ -9,7 +9,6 @@ public class SubGoal implements Serializable {
     public static final String COLUMN_ID = "id";
     public static final String COLUMN_GOAL = "sub_goal_title";
     public static final String MASTER_GOAL_ID = "master_goal_id";
-   // public static final String RECYCLER_POSITION = "recycle_position";
 
     public static final String CREATE_TABLE =
             "CREATE TABLE " + TABLE_NAME + " ("
@@ -21,7 +20,6 @@ public class SubGoal implements Serializable {
     private int id;
     private String subGoal;
     private int masterId;
-   // private int recyclerPosition;
 
     public SubGoal(){
 

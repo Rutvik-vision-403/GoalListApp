@@ -18,17 +18,9 @@ import java.util.Calendar;
 
 public class SetDateCalenderFragment extends DialogFragment implements DatePickerDialog.OnDateSetListener {
 
-    final DatabaseHelper databaseHelper;
-    final Context context;
     final TextView showDate;
 
-    public static long idOfInsertedDate;
-    public static boolean isDateSet = false;
-    public static String date;
-
-    public SetDateCalenderFragment(Context context,TextView date){
-        this.context = context;
-        databaseHelper = new DatabaseHelper(context);
+    public SetDateCalenderFragment(TextView date){
         showDate = date;
     }
 

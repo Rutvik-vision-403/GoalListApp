@@ -2,7 +2,6 @@ package com.example.goallist;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -18,37 +17,39 @@ import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.goallist.AddGoalList.AdapterForFetchData;
-import com.example.goallist.AddGoalList.AddGoalListAdapter;
+import com.example.goallist.Adapters.AddNewGoal;
+import com.example.goallist.Adapters.FetchData;
+import com.example.goallist.CallBackClasses.ItemMoveCallbackForSubGoal;
 import com.example.goallist.Database.DatabaseHelper;
 import com.example.goallist.Database.SubGoal;
 
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Objects;
 
-import static com.example.goallist.AddGoalList.ShowGoalListInMainActivityAdapter.isFromEditButton;
-import static com.example.goallist.AddGoalList.ShowGoalListInMainActivityAdapter.isIsFromEditButtonForSave;
+import static com.example.goallist.Adapters.MainGoalList.isFromEditButton;
+import static com.example.goallist.Adapters.MainGoalList.isFromEditButtonForSave;
 
 
-public class AddGoal extends AppCompatActivity {
+public class AddGoal extends AppCompatActivity{
 
+    // Sub goal recycler view
     private RecyclerView addGoalList;
 
-    private AddGoalListAdapter addGoalItem;
-    private AdapterForFetchData adapterForFetchData;
+    // Adapters for sub goals data
+    private AddNewGoal addGoalItem;
+    private FetchData adapterForFetchData;
+
     private EditText goalTitle;
     private TextView dateView;
-    private CardView datePick;
-    private CardView addNewSubGoal;
-    private LinearLayout addGoalLayout;
 
     final DatabaseHelper databaseHelper = new DatabaseHelper(this);
 
-    List<SubGoal> selectedSubGoals = new ArrayList<>();
-    List<SubGoal> addNewItemInArray = new ArrayList<>();
+    ArrayList<SubGoal> selectedSubGoals = new ArrayList<>();
+    ArrayList<SubGoal> addNewItemInArray = new ArrayList<>();
 
     public static int idOfMasterGoal;
     public static int idOfMasterGoalIndex;
+
     public static boolean forUpdate = false;
 
     @Override
@@ -66,14 +67,16 @@ public class AddGoal extends AppCompatActivity {
 
         goalTitle = findViewById(R.id.goalTitle);
         addGoalList = findViewById(R.id.addGoalList);
-        addNewSubGoal = findViewById(R.id.addNewGoal);
-        datePick = findViewById(R.id.setDate);
+
+        CardView addNewSubGoal = findViewById(R.id.addNewGoal);
+        CardView datePick = findViewById(R.id.setDate);
+
         dateView = findViewById(R.id.showDateTextView);
-        addGoalLayout = findViewById(R.id.linearLayoutAddGoal);
+       LinearLayout addGoalLayout = findViewById(R.id.linearLayoutAddGoal);
         addGoalList.setLayoutManager(new LinearLayoutManager(this));
 
-
-       addGoalList.getRecycledViewPool().setMaxRecycledViews(1, 0);
+        // TODO : remove this method after testing if functionality never change
+        //addGoalList.getRecycledViewPool().setMaxRecycledViews(1, 0);
 
         if (isFromEditButton) {
 
@@ -90,30 +93,41 @@ public class AddGoal extends AppCompatActivity {
         }
 
         datePick.setOnClickListener(view -> {
-            SetDateCalenderFragment setDateCalenderFragment = new SetDateCalenderFragment(AddGoal.this, dateView);
+            SetDateCalenderFragment setDateCalenderFragment = new SetDateCalenderFragment(dateView);
             setDateCalenderFragment.show(getSupportFragmentManager(), "Set Goal Date");
         });
 
         if (isFromEditButton) {
-            adapterForFetchData = new AdapterForFetchData(selectedSubGoals, addGoalList, this);
-            addGoalList.setAdapter(adapterForFetchData);
-            addNewSubGoal.setVisibility(View.VISIBLE);
+            adapterForFetchData = new FetchData(selectedSubGoals, addGoalList, this);
+
             addGoalLayout.setFocusableInTouchMode(true);
             addGoalLayout.setFocusable(true);
 
-            adapterForFetchData.notifyDataSetChanged();
-            ItemTouchHelper.Callback dragDropListener= new SubGoalMoveCallBack(this,adapterForFetchData);
-            ItemTouchHelper itemTouchHelper = new ItemTouchHelper(dragDropListener);
-            itemTouchHelper.attachToRecyclerView(addGoalList);
+            ItemTouchHelper.Callback callback =
+                    new ItemMoveCallbackForSubGoal(adapterForFetchData);
+            ItemTouchHelper touchHelper = new ItemTouchHelper(callback);
+            touchHelper.attachToRecyclerView(addGoalList);
+
+            addGoalList.setAdapter(adapterForFetchData);
+
+//            adapterForFetchData.notifyDataSetChanged();
+//            ItemTouchHelper.Callback dragDropListener= new SubGoalMoveCallBack(this,adapterForFetchData);
+//            ItemTouchHelper itemTouchHelper = new ItemTouchHelper(dragDropListener);
+//            itemTouchHelper.attachToRecyclerView(addGoalList);
 
         } else {
-            addGoalItem = new AddGoalListAdapter(addNewItemInArray, addGoalList, this);
-            addGoalList.setAdapter(addGoalItem);
-            addNewSubGoal.setVisibility(View.VISIBLE);
+            addGoalItem = new AddNewGoal(addNewItemInArray, addGoalList, this);
 
-            ItemTouchHelper.Callback dragDropListener= new SubGoalMoveCallBack(this,addGoalItem);
-            ItemTouchHelper itemTouchHelper = new ItemTouchHelper(dragDropListener);
-            itemTouchHelper.attachToRecyclerView(addGoalList);
+            ItemTouchHelper.Callback callback =
+                    new ItemMoveCallbackForSubGoal(addGoalItem);
+            ItemTouchHelper touchHelper = new ItemTouchHelper(callback);
+            touchHelper.attachToRecyclerView(addGoalList);
+
+            addGoalList.setAdapter(addGoalItem);
+
+//            ItemTouchHelper.Callback dragDropListener= new SubGoalMoveCallBack(this,addGoalItem);
+//            ItemTouchHelper itemTouchHelper = new ItemTouchHelper(dragDropListener);
+//            itemTouchHelper.attachToRecyclerView(addGoalList);
         }
 
         setDataOnAllView();
@@ -123,7 +137,7 @@ public class AddGoal extends AppCompatActivity {
     public void setDataOnAllView() {
 
         if (isFromEditButton) {
-            goalTitle.setText(databaseHelper.getMasterGoal(idOfMasterGoalIndex).getGoalTitle());
+           goalTitle.setText(databaseHelper.getMasterGoal(idOfMasterGoalIndex).getGoalTitle());
             isFromEditButton = false;
         }
     }
@@ -138,7 +152,7 @@ public class AddGoal extends AppCompatActivity {
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         if (R.id.saveGoal == item.getItemId()) {
 
-            if (isIsFromEditButtonForSave) {
+            if (isFromEditButtonForSave) {
 
                 databaseHelper.updateDateInMasterGoal(AddGoal.idOfMasterGoalIndex, dateView.getText().toString());
 
@@ -148,14 +162,16 @@ public class AddGoal extends AppCompatActivity {
 
                     for (int insert = 0; insert < selectedSubGoals.size(); insert++) {
 
-                        EditText editText = addGoalList.findViewHolderForAdapterPosition(insert).itemView.findViewById(R.id.addNewItem);
+                        EditText editText = Objects.requireNonNull(addGoalList.findViewHolderForAdapterPosition(insert)).itemView.findViewById(R.id.addNewItem);
                         if (editText.getText().toString().isEmpty())
                             continue;
                         databaseHelper.insertSubGoals(editText.getText().toString(), idOfMasterGoal);
 
                     }
-                    isIsFromEditButtonForSave = false;
+
+                    isFromEditButtonForSave = false;
                     forUpdate = false;
+
                     Intent gotoMainActivity = new Intent(this, MainActivity.class);
                     gotoMainActivity.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
                     startActivity(gotoMainActivity);
@@ -179,7 +195,7 @@ public class AddGoal extends AppCompatActivity {
 
                         for (int iterate = 0; iterate < addGoalItem.getItemCount(); iterate++) {
 
-                            EditText editText = addGoalList.findViewHolderForAdapterPosition(iterate).itemView.findViewById(R.id.addNewItem);
+                            EditText editText = Objects.requireNonNull(addGoalList.findViewHolderForAdapterPosition(iterate)).itemView.findViewById(R.id.addNewItem);
                             if (editText.getText().toString().isEmpty())
                                 continue;
                             databaseHelper.insertSubGoals(editText.getText().toString(), id);
@@ -209,7 +225,7 @@ public class AddGoal extends AppCompatActivity {
 
                         for (int iterate = 0; iterate < addGoalItem.getItemCount(); iterate++) {
 
-                            EditText editText = addGoalList.findViewHolderForAdapterPosition(iterate).itemView.findViewById(R.id.addNewItem);
+                            EditText editText = Objects.requireNonNull(addGoalList.findViewHolderForAdapterPosition(iterate)).itemView.findViewById(R.id.addNewItem);
                             if (editText.getText().toString().isEmpty())
                                 continue;
                             databaseHelper.insertSubGoals(editText.getText().toString(), id);
@@ -275,7 +291,9 @@ public class AddGoal extends AppCompatActivity {
     public void onBackPressed() {
         super.onBackPressed();
 
-        isIsFromEditButtonForSave = false;
+        isFromEditButtonForSave = false;
         forUpdate = false;
+
     }
+
 }

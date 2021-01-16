@@ -1,4 +1,4 @@
-package com.example.goallist.AddGoalList;
+package com.example.goallist.Adapters;
 
 import android.content.Context;
 import android.view.LayoutInflater;
@@ -14,12 +14,12 @@ import com.example.goallist.R;
 
 import java.util.List;
 
-public class AddGoalSubTaskWhenExpandAdapter extends RecyclerView.Adapter<AddGoalSubTaskWhenExpandAdapter.MyAdapter> {
+public class SubTaskWhenExpand extends RecyclerView.Adapter<SubTaskWhenExpand.MyAdapter> {
 
     final List<SubGoal> subGoalsDataOnly;
     final Context mainActivityContext;
 
-    public AddGoalSubTaskWhenExpandAdapter(List<SubGoal> subGoalsDataOnly, Context mainActivityContext){
+    public SubTaskWhenExpand(List<SubGoal> subGoalsDataOnly, Context mainActivityContext){
 
         this.subGoalsDataOnly = subGoalsDataOnly;
         this.mainActivityContext = mainActivityContext;

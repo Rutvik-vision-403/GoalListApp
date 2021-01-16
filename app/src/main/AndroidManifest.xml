@@ -23,6 +23,10 @@
         <activity
             android:name=".MainActivity"
             android:screenOrientation="locked">
+
+            <meta-data android:name="android.app.searchable" android:resource="@xml/searchable">
+
+            </meta-data>
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

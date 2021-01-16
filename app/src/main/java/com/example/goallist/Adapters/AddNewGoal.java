@@ -1,4 +1,4 @@
-package com.example.goallist.AddGoalList;
+package com.example.goallist.Adapters;
 
 import android.content.Context;
 import android.text.Editable;
@@ -13,40 +13,39 @@ import android.widget.ImageView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.goallist.CallBackClasses.ItemMoveCallbackForSubGoal;
 import com.example.goallist.Database.SubGoal;
-import com.example.goallist.DragDropInterfaces.SubGoalCallBack;
+import com.example.goallist.DragDropInterfaces.DragDropCallBacks;
 import com.example.goallist.R;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class AddGoalListAdapter extends RecyclerView.Adapter<AddGoalListAdapter.MyViewHolder> implements SubGoalCallBack {
+public class AddNewGoal extends RecyclerView.Adapter<AddNewGoal.MyViewHolder> implements ItemMoveCallbackForSubGoal.ItemTouchHelperContract {
 
-    final List<SubGoal> goalItem;
+    final ArrayList<SubGoal> goalItem;
     final Context activityContext;
     final RecyclerView currentRecyclerView;
 
-    public AddGoalListAdapter(List<SubGoal> goalItem, RecyclerView currentRecyclerView , Context activityContext) {
+    public AddNewGoal(ArrayList<SubGoal> goalItem, RecyclerView currentRecyclerView , Context activityContext) {
         this.goalItem = goalItem;
         this.activityContext = activityContext;
         this.currentRecyclerView = currentRecyclerView;
     }
 
     @Override
-    public boolean onSubGoalMove(int from, int to) {
-        if (from < to) {
-            for (int i = from; i < to; i++) {
+    public void onRowMoved(int fromPosition, int toPosition) {
+        if (fromPosition < toPosition) {
+            for (int i = fromPosition; i < toPosition; i++) {
                 Collections.swap(goalItem, i, i + 1);
             }
         } else {
-            for (int i = from; i > to; i--) {
+            for (int i = fromPosition; i > toPosition; i--) {
                 Collections.swap(goalItem, i, i - 1);
             }
         }
-        notifyItemMoved(from, to);
-
-
-        return true;
+        notifyItemMoved(fromPosition, toPosition);
     }
 
     public static class MyViewHolder extends RecyclerView.ViewHolder {
@@ -84,6 +83,11 @@ public class AddGoalListAdapter extends RecyclerView.Adapter<AddGoalListAdapter.
     @Override
     public void onBindViewHolder(@NonNull MyViewHolder holder, int position) {
 
+        /*
+         edit text content vanish after adding new item in list
+         so this method used to cancel recycling of viewHolder inside
+         recycleView
+        */
         holder.setIsRecyclable(false);
 
         if(goalItem.get(position).getSubGoal() == null){
@@ -116,10 +120,10 @@ public class AddGoalListAdapter extends RecyclerView.Adapter<AddGoalListAdapter.
 
     }
 
-    @Override
-    public int getItemViewType(int position) {
-        return position;
-    }
+//    @Override
+//    public int getItemViewType(int position) {
+//        return position;
+//    }
 
     @Override
     public int getItemCount() {
