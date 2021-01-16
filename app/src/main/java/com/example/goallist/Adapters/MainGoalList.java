@@ -293,33 +293,23 @@ public class MainGoalList extends RecyclerView.Adapter<MainGoalList.MainActViewH
                 if (filterString.isEmpty()) {
                     filterList = masterGoalsWithDragData;
                 } else {
-                    List<MasterGoal> tempMasterGoal = new ArrayList<>();
-                    List<MasterGoal> filterSubGoals = new ArrayList<>();
 
-                    // TODO : 1. letter contain in title
-                    //        2. Contain in sub goal
-                    //        3. Contain in Both   (OR Condition) (Only add once every time contain letter in every goal and subgoal)
+                    List<MasterGoal> tempMasterGoal = new ArrayList<>();
 
                     for (MasterGoal f : masterGoalsWithDragData) {
 
                         List<SubGoal> subGoals = databaseHelper.getSubGoalWithRecyclerPosition(f.getRecyclerPosition());
-                        boolean goalTitleContain = false;
-                        boolean subGoalContain = false;
 
                         if (f.getGoalTitle().toLowerCase().contains(filterString.toLowerCase())) {
-                            filterSubGoals.add(f);
-                            // Store Current master Goal index and store it then get from draglist
-                            goalTitleContain = true;
+                            tempMasterGoal.add(f);
                         }
 
                         for (SubGoal s : subGoals) {
                             if (s.getSubGoal().toLowerCase().contains(filterString.toLowerCase())) {
-                                subGoalContain = true;
+                                if (!tempMasterGoal.contains(f)){
+                                    tempMasterGoal.add(f);
+                                }
                             }
-                        }
-
-                        if (goalTitleContain || subGoalContain){
-                            tempMasterGoal.addAll(filterSubGoals);
                         }
 
                     }
